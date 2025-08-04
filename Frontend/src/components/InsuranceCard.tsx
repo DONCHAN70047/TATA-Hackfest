@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { InsuranceType } from '../types';
 import { ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
 
@@ -9,8 +9,13 @@ interface InsuranceCardProps {
 const InsuranceCard: React.FC<InsuranceCardProps> = ({ insurance }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
+  const toggleExpand = useCallback(() => {
+    setIsExpanded(prev => !prev);
+  }, []);
+
   return (
     <div className="card hover:shadow-md transition-shadow duration-200">
+      {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center space-x-4">
           <div className="text-4xl">{insurance.icon}</div>
@@ -24,55 +29,49 @@ const InsuranceCard: React.FC<InsuranceCardProps> = ({ insurance }) => {
           </div>
         </div>
         <button
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={toggleExpand}
+          aria-expanded={isExpanded}
+          aria-label={`Toggle details for ${insurance.name}`}
           className="text-gray-400 hover:text-gray-600 transition-colors"
         >
           {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
         </button>
       </div>
 
+      {/* Expanded Content */}
       {isExpanded && (
         <div className="mt-6 space-y-6">
-          {/* Features */}
-          <div>
-            <h4 className="text-lg font-medium text-gray-900 mb-3">Key Features</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {insurance.features.map((feature, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  <span className="text-sm text-gray-700">{feature}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <DetailSection title="Key Features">
+            {insurance.features.map((feature, index) => (
+              <DetailItem
+                key={index}
+                icon={<CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />}
+                text={feature}
+              />
+            ))}
+          </DetailSection>
 
-          {/* Coverage */}
-          <div>
-            <h4 className="text-lg font-medium text-gray-900 mb-3">Coverage Options</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {insurance.coverage.map((coverage, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-primary-500 rounded-full flex-shrink-0"></div>
-                  <span className="text-sm text-gray-700">{coverage}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <DetailSection title="Coverage Options">
+            {insurance.coverage.map((coverage, index) => (
+              <DetailItem
+                key={index}
+                icon={<Dot color="primary" />}
+                text={coverage}
+              />
+            ))}
+          </DetailSection>
 
-          {/* Benefits */}
-          <div>
-            <h4 className="text-lg font-medium text-gray-900 mb-3">Benefits</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {insurance.benefits.map((benefit, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
-                  <span className="text-sm text-gray-700">{benefit}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <DetailSection title="Benefits">
+            {insurance.benefits.map((benefit, index) => (
+              <DetailItem
+                key={index}
+                icon={<Dot color="green" />}
+                text={benefit}
+              />
+            ))}
+          </DetailSection>
 
-          {/* CTA Button */}
+          {/* CTA */}
           <div className="pt-4 border-t border-gray-200">
             <button className="btn-primary w-full">
               Get Quote for {insurance.name}
@@ -84,4 +83,24 @@ const InsuranceCard: React.FC<InsuranceCardProps> = ({ insurance }) => {
   );
 };
 
-export default InsuranceCard; 
+export default InsuranceCard;
+
+
+const DetailSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+  <div>
+    <h4 className="text-lg font-medium text-gray-900 mb-3">{title}</h4>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">{children}</div>
+  </div>
+);
+
+const DetailItem: React.FC<{ icon: React.ReactNode; text: string }> = ({ icon, text }) => (
+  <div className="flex items-center space-x-2">
+    {icon}
+    <span className="text-sm text-gray-700">{text}</span>
+  </div>
+);
+
+const Dot: React.FC<{ color: 'primary' | 'green' }> = ({ color }) => {
+  const bgColor = color === 'primary' ? 'bg-primary-500' : 'bg-green-500';
+  return <div className={`w-2 h-2 ${bgColor} rounded-full flex-shrink-0`} />;
+};

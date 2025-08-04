@@ -3,9 +3,9 @@ import Header from './Header';
 import InsuranceCard from './InsuranceCard';
 import PdfUpload from './PdfUpload';
 import ContactForm from './ContactForm';
+import AiChatInterface from './AiChatInterface';
 import { insuranceTypes } from '../data/insuranceTypes';
 import { Shield, Users, Award, Clock, MessageCircle } from 'lucide-react';
-import AiChatInterface from './AiChatInterface';
 
 const HomePage: React.FC = () => {
   const [showChat, setShowChat] = useState(false);
@@ -83,15 +83,19 @@ const HomePage: React.FC = () => {
 
       {/* Document Upload */}
       <section id="upload" className="py-16 bg-neutral-900">
-        <PdfUpload />
+        <div className="max-w-7xl mx-auto px-4">
+          <PdfUpload />
+        </div>
       </section>
 
       {/* Contact Form */}
       <section id="contact" className="py-16 bg-black">
-        <ContactForm />
+        <div className="max-w-7xl mx-auto px-4">
+          <ContactForm />
+        </div>
       </section>
 
-      {/* Toggle Chatbot */}
+      {/* AI Chatbot Section */}
       <section id="ai-chat" className="py-16 bg-black text-white text-center">
         {!showChat ? (
           <button
