@@ -6,7 +6,6 @@ interface Message {
   text: string;
   sender: 'user' | 'ai';
   timestamp: Date;
-  isLoading?: boolean;
 }
 
 const AiChatInterface: React.FC = () => {
@@ -20,15 +19,17 @@ const AiChatInterface: React.FC = () => {
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,6 +77,7 @@ const AiChatInterface: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto p-6 bg-[#0f0f0f] min-h-screen text-white">
+      {/* Header */}
       <div className="text-center mb-10">
         <div className="flex items-center justify-center space-x-3 mb-4">
           <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
@@ -88,8 +90,8 @@ const AiChatInterface: React.FC = () => {
         </p>
       </div>
 
+      {/* Chat Box */}
       <div className="bg-[#1a1a1a] rounded-xl p-6 shadow-xl backdrop-blur-md border border-gray-700">
-        {/* Chat Box */}
         <div className="h-[400px] overflow-y-auto pr-2 mb-6 space-y-4">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -139,6 +141,7 @@ const AiChatInterface: React.FC = () => {
         {/* Input Box */}
         <form onSubmit={handleSendMessage} className="flex gap-2 items-center">
           <input
+            ref={inputRef}
             type="text"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
@@ -148,6 +151,7 @@ const AiChatInterface: React.FC = () => {
           />
           <button
             type="submit"
+            aria-label="Send message"
             disabled={!inputMessage.trim() || isTyping}
             className="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg text-white flex items-center gap-2 disabled:opacity-50"
           >
