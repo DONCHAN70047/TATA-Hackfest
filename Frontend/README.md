@@ -1,150 +1,46 @@
-# Insurance Customer Services Application
+# Getting Started with Create React App
 
-A comprehensive React TypeScript application for insurance customer services, featuring document upload functionality and coverage verification.
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-## Features
+## Available Scripts
 
-### Insurance Services
-- **Life Insurance** - Comprehensive life coverage with death benefits and cash value accumulation
-- **Car Insurance** - Auto insurance with liability, collision, and comprehensive coverage
-- **Travel Insurance** - Trip protection with medical emergency and cancellation coverage
-- **Disability Insurance** - Income protection for illness or injury
-- **Health Insurance** - Medical coverage with prescription and preventive care benefits
-- **Property Insurance** - Home and belongings protection with liability coverage
+In the project directory, you can run:
 
-### Document Upload System
-- Drag & drop PDF upload functionality
-- Real-time document processing simulation
-- Insurance type categorization
-- Coverage availability verification
-- File status tracking with visual indicators
+### `npm start`
 
-### Customer Service Features
-- Interactive contact form
-- 24/7 support information
-- Service comparison tools
-- Responsive design for all devices
+Runs the app in the development mode.\
+Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 
-## Technology Stack
+The page will reload if you make edits.\
+You will also see any lint errors in the console.
 
-- **Frontend**: React 18 with TypeScript
-- **Styling**: Tailwind CSS
-- **Icons**: Lucide React
-- **File Upload**: React Dropzone
-- **PDF Processing**: React PDF (for future enhancements)
+### `npm test`
 
-## Getting Started
+Launches the test runner in the interactive watch mode.\
+See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
-### Prerequisites
-- Node.js (version 16 or higher)
-- npm or yarn package manager
+### `npm run build`
 
-### Installation
+Builds the app for production to the `build` folder.\
+It correctly bundles React in production mode and optimizes the build for the best performance.
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd customer-services
-```
+The build is minified and the filenames include the hashes.\
+Your app is ready to be deployed!
 
-2. Install dependencies:
-```bash
-npm install
-```
+See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
-3. Start the development server:
-```bash
-npm start
-```
+### `npm run eject`
 
-4. Open your browser and navigate to `http://localhost:3000`
+**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
 
-### Available Scripts
+If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
 
-- `npm start` - Runs the app in development mode
-- `npm run build` - Builds the app for production
-- `npm test` - Launches the test runner
-- `npm run eject` - Ejects from Create React App (one-way operation)
+Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
 
-## Project Structure
+You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
 
-```
-src/
-├── components/          # React components
-│   ├── Header.tsx      # Navigation and branding
-│   ├── InsuranceCard.tsx # Individual insurance service cards
-│   ├── PdfUpload.tsx   # Document upload functionality
-│   └── ContactForm.tsx # Customer contact form
-├── data/               # Static data and configurations
-│   └── insuranceTypes.ts # Insurance service definitions
-├── types/              # TypeScript type definitions
-│   └── index.ts        # Interface definitions
-├── App.tsx             # Main application component
-├── index.tsx           # Application entry point
-└── index.css           # Global styles and Tailwind imports
-```
+## Learn More
 
-## Key Components
+You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
-### InsuranceCard
-- Expandable cards showing insurance service details
-- Features, coverage options, and benefits display
-- Interactive elements with smooth animations
-
-### PdfUpload
-- Drag & drop file upload interface
-- File type validation (PDF only)
-- Real-time processing simulation
-- Status tracking with visual feedback
-
-### ContactForm
-- Comprehensive contact form with validation
-- Insurance type selection
-- Form submission simulation
-- Success/error state handling
-
-## Customization
-
-### Adding New Insurance Types
-1. Edit `src/data/insuranceTypes.ts`
-2. Add new insurance type object with required properties
-3. Update the contact form options if needed
-
-### Styling
-- Uses Tailwind CSS for styling
-- Custom color scheme defined in `tailwind.config.js`
-- Responsive design with mobile-first approach
-
-### Configuration
-- Update contact information in `ContactForm.tsx`
-- Modify company branding in `Header.tsx`
-- Adjust upload settings in `PdfUpload.tsx`
-
-## Future Enhancements
-
-- Real PDF processing and text extraction
-- User authentication and account management
-- Quote generation system
-- Claims filing functionality
-- Payment processing integration
-- Multi-language support
-- Advanced analytics dashboard
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License.
-
-## Support
-
-For support and questions:
-- Email: support@insurancepro.com
-- Phone: 1-800-INSURANCE
-- Business Hours: Monday - Friday 8AM - 8PM EST 
+To learn React, check out the [React documentation](https://reactjs.org/).
