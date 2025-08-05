@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const SignupPage: React.FC = () => {
   const [fullName, setFullName] = useState('');
@@ -7,6 +7,7 @@ const SignupPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -14,17 +15,36 @@ const SignupPage: React.FC = () => {
     setError('');
 
     try {
-      // Simulate signup API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // TODO: Replace with actual signup logic
-      if (fullName && email && password.length >= 6) {
-        console.log('Signup successful!');
-        // Redirect or show success message
-      } else {
+      if (!fullName || !email || password.length < 6) {
         throw new Error('Please fill all fields correctly');
       }
+
+      const payload = {
+        username: fullName,
+        email,
+        password,
+      };
+
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/sign_in/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Signup failed');
+      }
+
+      console.log('✅ Signup successful:', data);
+      alert('🎉 Account created successfully!');
+      navigate('/login'); 
     } catch (err: any) {
+      console.error('❌ Signup error:', err.message);
       setError(err.message || 'Signup failed');
     } finally {
       setIsSubmitting(false);
