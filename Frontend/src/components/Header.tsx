@@ -1,12 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { Shield, Phone, Mail } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { UserContext } from '../pages/context/UserContext'; 
 
 const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
+
+  // ✅ Safe context access
+  const context = useContext(UserContext);
+  if (!context) throw new Error('UserContext must be used within a UserProvider');
+  const { user, setUser } = context;
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(prev => !prev);
+  };
+
+  useEffect(() => {
+    const token = sessionStorage.getItem('access_token');
+    const storedUser = sessionStorage.getItem('user');
+    if (token && storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        if (parsedUser?.username) {
+          setUser(parsedUser);
+        }
+      } catch (err) {
+        console.error('Failed to parse user from sessionStorage:', err);
+      }
+    }
+  }, [setUser]);
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('access_token');
+    sessionStorage.removeItem('refresh_token');
+    sessionStorage.removeItem('user');
+    setUser(null);
+    navigate('/');
   };
 
   return (
@@ -52,14 +82,26 @@ const Header: React.FC = () => {
             </div>
           </div>
 
-          {/* Login Button */}
+          {/* Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4 ml-6">
-            <Link
-              to="/login"
-              className="px-4 py-1.5 rounded-md border border-primary-600 text-primary-600 font-medium hover:bg-primary-600 hover:text-white transition"
-            >
-              Login
-            </Link>
+            {user ? (
+              <>
+                <span className="text-sm text-gray-300">Hi, {user.username}</span>
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-1.5 rounded-md border border-red-500 text-red-500 font-medium hover:bg-red-500 hover:text-white transition"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                className="px-4 py-1.5 rounded-md border border-primary-600 text-primary-600 font-medium hover:bg-primary-600 hover:text-white transition"
+              >
+                Login
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -93,12 +135,21 @@ const Header: React.FC = () => {
             <a href="#contact" className="text-gray-200 hover:text-primary-400 font-medium">
               Contact
             </a>
-            <Link
-              to="/login"
-              className="text-primary-600 hover:text-white border border-primary-600 px-4 py-2 rounded-md text-center"
-            >
-              Login
-            </Link>
+            {user ? (
+              <button
+                onClick={handleLogout}
+                className="text-red-500 hover:text-white border border-red-500 px-4 py-2 rounded-md text-center"
+              >
+                Logout
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                className="text-primary-600 hover:text-white border border-primary-600 px-4 py-2 rounded-md text-center"
+              >
+                Login
+              </Link>
+            )}
           </nav>
         </div>
       )}

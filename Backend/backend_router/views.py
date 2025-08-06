@@ -9,12 +9,17 @@ from django.contrib.auth.hashers import make_password
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
-
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_201_CREATED, HTTP_500_INTERNAL_SERVER_ERROR
+from rest_framework.permissions import AllowAny
+from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
+from django.contrib.auth import authenticate
+from rest_framework_simplejwt.tokens import RefreshToken
+
 
 # from .MLModel.MLapp import predict_disease
 
@@ -82,8 +87,8 @@ def sign_in(request):
         access_token = str(refresh.access_token)
         refresh_token = str(refresh)
 
-        print(access_token)
-        print(refresh_token)
+        #print(access_token)
+        #print(refresh_token)
         
 
         response = Response({
@@ -92,7 +97,7 @@ def sign_in(request):
             "refresh": refresh_token,
         }, status=HTTP_201_CREATED)
 
-        MailFunction(email, username, password)
+        #MailFunction(email, username, password)
 
         secure = False  
         response.set_cookie('access', access_token, httponly=True, secure=secure, samesite='Lax')
@@ -103,3 +108,53 @@ def sign_in(request):
     except Exception as e:
         return Response({"error": str(e)}, status=HTTP_500_INTERNAL_SERVER_ERROR)
 # ....................................................................... sign_in ............................................  
+
+# ....................................................................... current user ...............................................
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def current_user(request):
+    user = request.user
+    return Response({
+        "id": user.id,
+        "username": user.username,
+        "email": user.email, 
+    })
+# ....................................................................... current user ...............................................
+
+# ....................................................................... Login ..........................................................
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def log_in(request):
+    email = request.data.get('email')
+    password = request.data.get('password')
+
+    if not email or not password:
+        return Response({"error": "Email and password required"}, status=HTTP_400_BAD_REQUEST)
+
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        return Response({"error": "User not found"}, status=HTTP_400_BAD_REQUEST)
+
+    user = authenticate(username=user.username, password=password)
+    if not user:
+        return Response({"error": "Invalid credentials"}, status=HTTP_400_BAD_REQUEST)
+
+    refresh = RefreshToken.for_user(user)
+    access_token = str(refresh.access_token)
+    refresh_token = str(refresh)
+
+    response = Response({
+        "message": "Login successful",
+        "access": access_token,
+        "refresh": refresh_token,
+        "username": user.username,  # ✅ Add this
+        "email": user.email 
+    }, status=HTTP_200_OK)
+
+    # Optional: set cookies
+    response.set_cookie('access', access_token, httponly=True, samesite='Lax')
+    response.set_cookie('refresh', refresh_token, httponly=True, samesite='Lax')
+
+    return response
+# ....................................................................... Login ..........................................................

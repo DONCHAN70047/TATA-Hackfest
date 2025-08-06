@@ -141,11 +141,12 @@ CORS_ALLOW_ALL_ORIGINS = True
 #]
 
 
+
+
+CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # or wherever your frontend runs
 ]
-
-CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = ['*']
 
 CORS_ALLOW_HEADERS = [
@@ -160,8 +161,8 @@ CORS_ALLOW_HEADERS = [
 
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://agri-smart-upolabdhi-backend-4-i6y6.onrender.com",
-    "https://agri-smart-upolabdhi-backend-3-w22q.onrender.com",
+    "http://localhost:3000",
+    "http://localhost:3000",
 ]
 
 CORS_ALLOW_METHODS = [

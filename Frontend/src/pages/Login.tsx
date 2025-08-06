@@ -1,11 +1,19 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useContext } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { UserContext } from './context/UserContext'; // ✅ Adjust path if needed
+import type { UserContextType } from './context/UserContext'; // ✅ Import type
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const navigate = useNavigate();
+
+  // ✅ Safe context access
+  const context = useContext(UserContext);
+  if (!context) throw new Error('UserContext must be used within a UserProvider');
+  const { setUser } = context as UserContextType;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -13,17 +21,41 @@ const Login: React.FC = () => {
     setError('');
 
     try {
-      // Simulate login API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/log_in/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include',
+      });
 
-      // TODO: Replace with actual login logic
-      if (email === 'test@example.com' && password === 'password') {
-        console.log('Login successful!');
-        // Redirect or update auth state here
-      } else {
-        throw new Error('Invalid credentials');
-      }
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Login failed');
+
+      console.log('✅ Login Success:', data);
+
+      // Store tokens
+      sessionStorage.setItem('access_token', data.access);
+      sessionStorage.setItem('refresh_token', data.refresh);
+
+      // Fetch current user
+      const userRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/current_user/`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${data.access}`,
+        },
+      });
+
+      const userData = await userRes.json();
+      if (!userRes.ok) throw new Error('Failed to fetch user');
+
+      // Store user and update context
+      sessionStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+
+      alert('🎉 Logged in successfully!');
+      navigate('/');
     } catch (err: any) {
+      console.error('❌ Login error:', err.message);
       setError(err.message || 'Login failed');
     } finally {
       setIsSubmitting(false);
@@ -32,7 +64,6 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-black to-gray-800 px-4 py-12 relative">
-      {/* Back to Home Button */}
       <div className="absolute top-4 right-4 z-10">
         <Link
           to="/"
@@ -42,9 +73,7 @@ const Login: React.FC = () => {
         </Link>
       </div>
 
-      {/* Login Form Card */}
       <div className="relative w-full max-w-md bg-white/10 backdrop-blur-xl rounded-3xl p-10 shadow-2xl border border-white/10">
-        {/* User Icon */}
         <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-white rounded-full p-2 shadow-lg">
           <img
             src="https://cdn-icons-png.flaticon.com/512/747/747376.png"
@@ -53,12 +82,10 @@ const Login: React.FC = () => {
           />
         </div>
 
-        {/* Heading */}
         <h2 className="text-2xl font-extrabold text-white text-center mb-6 tracking-tight">
           Welcome Back
         </h2>
 
-        {/* Login Form */}
         <form className="space-y-5" onSubmit={handleSubmit}>
           <div>
             <label className="text-sm text-white block mb-1">Email</label>
@@ -97,7 +124,6 @@ const Login: React.FC = () => {
           </button>
         </form>
 
-        {/* Sign Up Link */}
         <p className="text-sm text-white text-center mt-6">
           Don’t have an account?{' '}
           <Link to="/SignUP" className="text-blue-400 hover:underline">

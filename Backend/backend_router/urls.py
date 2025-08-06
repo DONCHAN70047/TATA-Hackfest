@@ -1,5 +1,7 @@
 from django.urls import path
 from backend_router import views
+from .views import log_in
+
 
 
 
@@ -12,10 +14,10 @@ from rest_framework_simplejwt.views import (
 
 urlpatterns = [
     path('sign_in/', views.sign_in, name="sign_in"),
-    #path('log_in/', views.login, name="login"),
+    path('log_in/', views.log_in, name="login"),
     # path('refresh/', views.refresh, name="refresh"),
     # path('blacklist/', views.blacklist, name="blacklist"),
-    #path('current_user/', views.current_user, name="current_user"),
+    path('current_user/', views.current_user, name="current_user"),
 
     #path('log_in/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     #path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),
