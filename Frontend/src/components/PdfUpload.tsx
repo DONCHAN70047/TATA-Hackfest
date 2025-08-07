@@ -24,49 +24,77 @@ const PdfUpload: React.FC = () => {
     }
   }, [uploadedFiles, activeChatFileId]);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const newFiles: UploadedFile[] = acceptedFiles.map(file => ({
-      id: Math.random().toString(36).substr(2, 9),
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      uploadedAt: new Date(),
-      status: 'uploading'
-    }));
+  const uploadToBackend = useCallback(async (file: File, fileMeta: UploadedFile) => {
+    const formData = new FormData();
+    formData.append('pdf', file);
+    formData.append('insurance_type', selectedInsuranceType || 'general');
 
-    setUploadedFiles(prev => [...prev, ...newFiles]);
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_BACKEND_URL}/api/MLModel/`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
 
-    newFiles.forEach(file => {
-      setTimeout(() => {
+      if (!response.ok) throw new Error('Upload failed');
+
+      setUploadedFiles(prev =>
+        prev.map(f =>
+          f.id === fileMeta.id
+            ? {
+                ...f,
+                status: 'completed',
+                availability: true,
+                message: 'Document uploaded successfully. You can now ask questions.'
+              }
+            : f
+        )
+      );
+    } catch (error) {
+      console.error(error);
+      setUploadedFiles(prev =>
+        prev.map(f =>
+          f.id === fileMeta.id
+            ? { ...f, status: 'error', message: 'Upload failed' }
+            : f
+        )
+      );
+    }
+  }, [selectedInsuranceType]);
+
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      const newFiles: UploadedFile[] = acceptedFiles.map(file => ({
+        id: Math.random().toString(36).substr(2, 9),
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        uploadedAt: new Date(),
+        status: 'uploading',
+        insuranceType: selectedInsuranceType || 'general'
+      }));
+
+      setUploadedFiles(prev => [...prev, ...newFiles]);
+
+      newFiles.forEach((fileMeta, index) => {
+        const file = acceptedFiles[index];
         setUploadedFiles(prev =>
           prev.map(f =>
-            f.id === file.id
+            f.id === fileMeta.id
               ? {
                   ...f,
-                  status: 'processing',
-                  insuranceType: selectedInsuranceType || 'general'
+                  status: 'processing'
                 }
               : f
           )
         );
-
-        setTimeout(() => {
-          setUploadedFiles(prev =>
-            prev.map(f =>
-              f.id === file.id
-                ? {
-                    ...f,
-                    status: 'completed',
-                    availability: true,
-                    message: 'Document uploaded successfully. You can now ask questions.'
-                  }
-                : f
-            )
-          );
-        }, 2000);
-      }, 1000);
-    });
-  }, [selectedInsuranceType]);
+        uploadToBackend(file, fileMeta);
+      });
+    },
+    [selectedInsuranceType, uploadToBackend]
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -122,7 +150,6 @@ const PdfUpload: React.FC = () => {
     <div className="max-w-4xl mx-auto p-6">
       {!activeChatFileId ? (
         <>
-          {/* Upload UI */}
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
               Upload Insurance Document
@@ -132,7 +159,6 @@ const PdfUpload: React.FC = () => {
             </p>
           </div>
 
-          {/* Insurance Type Selection */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Select Insurance Type
@@ -151,7 +177,6 @@ const PdfUpload: React.FC = () => {
             </select>
           </div>
 
-          {/* Dropzone */}
           <div
             {...getRootProps()}
             className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
@@ -169,7 +194,6 @@ const PdfUpload: React.FC = () => {
             <p className="text-sm text-gray-500">Only one PDF file allowed</p>
           </div>
 
-          {/* Upload Status */}
           {uploadedFiles.length > 0 && (
             <div className="mt-8 space-y-3">
               {uploadedFiles.map(file => (
@@ -208,7 +232,6 @@ const PdfUpload: React.FC = () => {
         </>
       ) : (
         <>
-          {/* Chatbot UI */}
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold text-gray-900">
               Ask Questions About Your Document

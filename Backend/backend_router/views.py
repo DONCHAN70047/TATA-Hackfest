@@ -27,9 +27,25 @@ from PIL import Image
 import cloudinary
 import cloudinary.uploader
 
+########## ML
+import os
+from rest_framework.decorators import api_view, parser_classes
+from rest_framework.parsers import MultiPartParser
+from rest_framework.response import Response
 
-
-
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.vectorstores import FAISS
+from langchain_google_genai.embeddings import GoogleGenerativeAIEmbeddings
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.chains.question_answering import load_qa_chain
+from .MLModel import Model
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.response import Response
+import asyncio
+from rest_framework.decorators import api_view, parser_classes
+from rest_framework.parsers import MultiPartParser
+from .MLModel.Model import create_vector_store_from_pdf
 
 
 
@@ -158,3 +174,86 @@ def log_in(request):
 
     return response
 # ....................................................................... Login ..........................................................
+
+
+
+
+UPLOAD_DIR = "uploaded_pdfs"
+VECTOR_STORE_DIR = "vector_stores\Machine_Learning_Notes[1]"
+#model = create_vector_store_from_pdf()
+
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(VECTOR_STORE_DIR, exist_ok=True)
+
+
+@api_view(['POST'])
+@parser_classes([MultiPartParser])
+def upload_pdf(request):
+    if 'pdf' not in request.FILES:
+        return Response({"error": "No PDF file provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+    pdf_file = request.FILES['pdf']
+    file_id = os.path.splitext(pdf_file.name)[0]  # safer than replace(".pdf", "")
+
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    os.makedirs(VECTOR_STORE_DIR, exist_ok=True)
+
+    pdf_path = os.path.join(UPLOAD_DIR, pdf_file.name)
+    with open(pdf_path, 'wb') as f:
+        for chunk in pdf_file.chunks():  # safer for large files
+            f.write(chunk)
+
+    vector_store_path = os.path.join(VECTOR_STORE_DIR, file_id)
+
+    try:
+        Model.create_vector_store_from_pdf(pdf_path, vector_store_path)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    print('PDF uploaded.......')
+    return Response({
+        "message": "PDF uploaded and processed successfully.",
+        "file_id": file_id
+    }, status=status.HTTP_200_OK)
+
+
+
+VECTOR_STORE_DIR = "vector_stores\Machine_Learning_Notes[1]"
+@api_view(['POST'])
+def ask_question(request):
+    file_id = request.data.get("file_id")
+    question = request.data.get("question")
+
+    print(question)
+
+    if not file_id or not question:
+        return Response({"error": "Both 'file_id' and 'question' are required."}, status=400)
+
+    vector_store_path = os.path.join(VECTOR_STORE_DIR, file_id)
+    if not os.path.exists(vector_store_path):
+        return Response({"error": f"No vector store found for file_id: {file_id}"}, status=404)
+    print("Contents:", os.listdir(vector_store_path))
+    response = asyncio.run(Model.answer_question_from_store(question, vector_store_path))
+    return Response({"response": response})
+
+
+
+@csrf_exempt
+def delete_vector_store_view(request):
+    if request.method == 'POST':
+        file_id = request.POST.get('file_id')
+        if not file_id:
+            return JsonResponse({"status": "error", "message": "Missing file_id"}, status=400)
+
+        vector_store_path = os.path.join(VECTOR_STORE_DIR, file_id)
+        try:
+            if os.path.exists(vector_store_path):
+                for file in os.listdir(vector_store_path):
+                    os.remove(os.path.join(vector_store_path, file))
+                os.rmdir(vector_store_path)
+                return JsonResponse({"status": "success", "message": f"Deleted vector store for file ID: {file_id}"})
+            else:
+                return JsonResponse({"status": "error", "message": f"Vector store not found for {file_id}"}, status=404)
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+    return JsonResponse({"status": "error", "message": "Invalid request method"}, status=405)

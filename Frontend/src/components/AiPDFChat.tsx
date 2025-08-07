@@ -14,21 +14,40 @@ const AiChatInterface: React.FC<AiChatInterfaceProps> = ({ fileId }) => {
   const [input, setInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  const sendMessage = (text: string) => {
+  const sendMessage = async (text: string) => {
     if (!text.trim()) return;
 
     const userMessage: ChatMessage = { sender: 'user', text };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
 
-    // Simulate bot response
-    setTimeout(() => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/ask-question/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          file_id: fileId,
+          question: text,
+        }),
+      });
+
+      const data = await response.json();
+
       const botMessage: ChatMessage = {
         sender: 'bot',
-        text: `You asked about "${text}". Here's a simulated answer based on document ID ${fileId}.`
+        text: data.answer || 'Sorry, I could not understand the question.',
       };
+
       setMessages(prev => [...prev, botMessage]);
-    }, 1000);
+    } catch (error) {
+      console.error('Error fetching answer:', error);
+      setMessages(prev => [
+        ...prev,
+        { sender: 'bot', text: '❌ Failed to get response from server.' },
+      ]);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {

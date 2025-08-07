@@ -1,8 +1,8 @@
 from django.urls import path
 from backend_router import views
 from .views import log_in
-
-
+from .views import upload_pdf  
+from .views import ask_question
 
 
 from rest_framework_simplejwt.views import (
@@ -18,6 +18,8 @@ urlpatterns = [
     # path('refresh/', views.refresh, name="refresh"),
     # path('blacklist/', views.blacklist, name="blacklist"),
     path('current_user/', views.current_user, name="current_user"),
+    path('MLModel/', upload_pdf, name='upload_insurance_pdf'),
+    path('ask-question/', ask_question, name='ask_question'),
 
     #path('log_in/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     #path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),

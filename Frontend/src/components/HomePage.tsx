@@ -7,6 +7,7 @@ import AiChatInterface from './AiChatInterface';
 import { insuranceTypes } from '../data/insuranceTypes';
 import { Shield, Users, Award, Clock, MessageCircle } from 'lucide-react';
 
+
 const HomePage: React.FC = () => {
   const [showChat, setShowChat] = useState(false);
 

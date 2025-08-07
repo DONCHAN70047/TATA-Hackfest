@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'TATAbackend',
     'corsheaders',
+    'rest_framework',
     'accounts',
     'backend_router',
     'django.contrib.messages',
@@ -183,3 +184,6 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.AllowAny',
     ],
 }
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
