@@ -98,8 +98,7 @@ def build_qa_chain():
 # ---------------------------------------
 # ANSWER A QUESTION FROM LOCAL VECTOR STORE
 # ---------------------------------------
-
-async def answer_question_from_store(question: str, vector_store_dir: str) -> str:
+def answer_question_from_store(question: str, vector_store_dir: str) :
     try:
         print(f"[DEBUG] Question received: {question}")
         print(f"[DEBUG] Vector store path: {vector_store_dir}")
@@ -124,15 +123,16 @@ async def answer_question_from_store(question: str, vector_store_dir: str) -> st
         print("[DEBUG] Building QA chain...")
         chain = build_qa_chain()
 
-        print("[DEBUG] Running chain asynchronously...")
-        result = await chain.acall({
+        print("[DEBUG] Running chain synchronously...")
+        result = chain.run({
             "input_documents": docs,
             "question": question
         })
 
         print("[DEBUG] Chain result:", result)
-        return result.get("output_text", "❌ No answer generated.")
+        return result or "❌ No answer generated."
 
     except Exception as e:
         print(f"❌ Exception in answering question: {str(e)}")
         return f"❌ Internal error: {str(e)}"
+

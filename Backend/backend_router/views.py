@@ -179,7 +179,7 @@ def log_in(request):
 
 
 UPLOAD_DIR = "uploaded_pdfs"
-VECTOR_STORE_DIR = "vector_stores\Machine_Learning_Notes[1]"
+VECTOR_STORE_DIR = r"vector_stores\Machine_Learning_Notes[1]"
 #model = create_vector_store_from_pdf()
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -217,23 +217,42 @@ def upload_pdf(request):
 
 
 
-VECTOR_STORE_DIR = "vector_stores\Machine_Learning_Notes[1]"
+VECTOR_STORE_DIR = r"vector_stores/Machine_Learning_Notes[1]"
 @api_view(['POST'])
 def ask_question(request):
     file_id = request.data.get("file_id")
     question = request.data.get("question")
 
-    print(question)
+    #print("Received question:", question)
 
     if not file_id or not question:
         return Response({"error": "Both 'file_id' and 'question' are required."}, status=400)
 
     vector_store_path = os.path.join(VECTOR_STORE_DIR, file_id)
+
     if not os.path.exists(vector_store_path):
         return Response({"error": f"No vector store found for file_id: {file_id}"}, status=404)
-    print("Contents:", os.listdir(vector_store_path))
-    response = asyncio.run(Model.answer_question_from_store(question, vector_store_path))
-    return Response({"response": response})
+
+    print("Vector Store Contents:", os.listdir(vector_store_path))
+
+    try:
+        # Direct function call (not async)
+        response = Model.answer_question_from_store(question, vector_store_path)        
+        return Response({"response": response})
+    except Exception as e:
+        print("Error while answering question:", str(e))
+        return Response({"error": str(e)}, status=500)
+
+
+
+@api_view(['POST'])
+def ml_model_view(request):
+    try:
+        # your existing ML logic here
+        return Response({'result': 'success'})
+    except Exception as e:
+        print("Error in MLModel view:", str(e))
+        return Response({'error': str(e)}, status=500)
 
 
 
