@@ -10,19 +10,15 @@ from langchain.prompts import PromptTemplate
 from langchain.chains.question_answering import load_qa_chain
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 
-# Apply nested asyncio for environments like Jupyter/ASGI servers
+
 nest_asyncio.apply()
 asyncio.set_event_loop(asyncio.new_event_loop())
-
-# Set your Google API Key (ensure this is set in your .env or config in real usage)
-GOOGLE_API_KEY = "AIzaSyBJjnvpb5NRIcDLWxnGQu1qVbXGdU1Van4"
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
 import google.generativeai as genai
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# ---------------------------------------
-# PDF TEXT EXTRACTION
-# ---------------------------------------
+
 
 def extract_text_from_pdf(path: str) -> str:
     """Extract all text from a PDF file."""
@@ -36,9 +32,7 @@ def extract_text_from_pdf(path: str) -> str:
     return text
 
 
-# ---------------------------------------
-# TEXT CHUNKING
-# ---------------------------------------
+
 
 def chunk_text(text: str, chunk_size=10000, chunk_overlap=1000) -> list:
     """Split long text into smaller overlapping chunks."""
@@ -46,12 +40,11 @@ def chunk_text(text: str, chunk_size=10000, chunk_overlap=1000) -> list:
     return splitter.split_text(text)
 
 
-# ---------------------------------------
-# VECTOR STORE CREATION
-# ---------------------------------------
 
+# VECTOR STORE CREATION
 def create_vector_store_from_pdf(pdf_path: str, vector_store_dir: str):
     """Extract, chunk, embed, and save vector store locally."""
+    os.makedirs(vector_store_dir, exist_ok=True)  
     raw_text = extract_text_from_pdf(pdf_path)
     chunks = chunk_text(raw_text)
     
@@ -61,13 +54,12 @@ def create_vector_store_from_pdf(pdf_path: str, vector_store_dir: str):
     )
 
     store = FAISS.from_texts(chunks, embedding=embeddings)
-    store.save_local(vector_store_dir)
+    store.save_local(vector_store_dir)  
 
 
-# ---------------------------------------
+
+
 # QUESTION ANSWERING CHAIN
-# ---------------------------------------
-
 def build_qa_chain():
     """Create a QA chain using Google Generative AI."""
     prompt = PromptTemplate(
@@ -95,44 +87,72 @@ def build_qa_chain():
     return load_qa_chain(model, chain_type="stuff", prompt=prompt)
 
 
-# ---------------------------------------
-# ANSWER A QUESTION FROM LOCAL VECTOR STORE
-# ---------------------------------------
-def answer_question_from_store(question: str, vector_store_dir: str) :
-    try:
-        print(f"[DEBUG] Question received: {question}")
-        print(f"[DEBUG] Vector store path: {vector_store_dir}")
+import os
+import uuid
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain_community.document_loaders import PyPDFLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-        if not os.path.exists(vector_store_dir):
-            return f"❌ Vector store not found at: {vector_store_dir}"
 
-        embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/embedding-001",
-            google_api_key=GOOGLE_API_KEY
-        )
 
-        print("[DEBUG] Loading FAISS vector store...")
-        db = FAISS.load_local(vector_store_dir, embeddings, allow_dangerous_deserialization=True)
 
-        print("[DEBUG] Performing similarity search...")
-        docs = db.similarity_search(question)
+# Process PDF & Create Vector Store
+def process_pdf(file_path: str, base_vector_store_dir: str):
+    file_id = str(uuid.uuid4())[:8]
+    vector_store_path = os.path.join(base_vector_store_dir, file_id)
 
-        if not docs:
-            return "❌ No relevant context found in the vector store."
+    os.makedirs(vector_store_path, exist_ok=True)
 
-        print("[DEBUG] Building QA chain...")
-        chain = build_qa_chain()
+  
+    loader = PyPDFLoader(file_path)
+    documents = loader.load()
 
-        print("[DEBUG] Running chain synchronously...")
-        result = chain.run({
-            "input_documents": docs,
-            "question": question
-        })
 
-        print("[DEBUG] Chain result:", result)
-        return result or "❌ No answer generated."
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=200
+    )
+    docs = text_splitter.split_documents(documents)
 
-    except Exception as e:
-        print(f"❌ Exception in answering question: {str(e)}")
-        return f"❌ Internal error: {str(e)}"
+   
+    embeddings = GoogleGenerativeAIEmbeddings(
+        model="models/embedding-001",
+        google_api_key=os.getenv("GOOGLE_API_KEY")  # ✅ safer than hardcoding
+    )
+
+
+    vectorstore = FAISS.from_documents(docs, embeddings)
+    vectorstore.save_local(vector_store_path)
+
+    return file_id  
+
+
+
+# Answer Question from Vector Store
+@staticmethod
+def answer_question_from_store(question: str, file_id: str, base_vector_store_dir: str):
+    vector_store_path = os.path.join(base_vector_store_dir, file_id)
+
+    print(f"vector_store_path: {vector_store_path}")
+
+    if not os.path.exists(vector_store_path):
+        return f"❌ Vector store not found for FileID: {file_id}"
+
+    embeddings = GoogleGenerativeAIEmbeddings(
+        model="models/embedding-001",
+        google_api_key=os.getenv("GOOGLE_API_KEY")
+    )
+
+    # Load existing FAISS index
+    vectorstore = FAISS.load_local(
+        vector_store_path,
+        embeddings,
+        allow_dangerous_deserialization=True
+    )
+
+    # Perform similarity search
+    docs = vectorstore.similarity_search(question, k=3)
+    answer = "\n\n".join([doc.page_content for doc in docs])
+    return answer
 

@@ -52,9 +52,9 @@ from .MLModel.Model import create_vector_store_from_pdf
 # ............................................................... CLOUDINARY ......................................
 secure = os.getenv('SECURE')    
 cloudinary.config( 
-    cloud_name = "dzhuecgcu", 
-    api_key = "328722844668938", 
-    api_secret = "2d2IBDN8s9vNoJRgkylVOJNoSYI", 
+    cloud_name = os.getenv('CLOUD_NAME'), 
+    api_key = os.getenv('CLOUDINARY_API-KEY'), 
+    api_secret = os.getenv('CLOUDINARY_API-SECRET'), 
     secure=True
 )
 # ............................................................... CLOUDINARY ......................................
@@ -63,7 +63,7 @@ cloudinary.config(
 
 # ............................................................... Mail Function ......................................
 def MailFunction(userMail, userName, password):
-    subject = 'Testing mail'
+    subject = 'InsurencePro💁‍♂️'
     from_email = settings.EMAIL_HOST_USER
     to_email = userMail
     text_content = 'This is a fallback plain text message.'
@@ -113,7 +113,7 @@ def sign_in(request):
             "refresh": refresh_token,
         }, status=HTTP_201_CREATED)
 
-        #MailFunction(email, username, password)
+        MailFunction(email, username, password)
 
         secure = False  
         response.set_cookie('access', access_token, httponly=True, secure=secure, samesite='Lax')
@@ -164,7 +164,7 @@ def log_in(request):
         "message": "Login successful",
         "access": access_token,
         "refresh": refresh_token,
-        "username": user.username,  # ✅ Add this
+        "username": user.username,  
         "email": user.email 
     }, status=HTTP_200_OK)
 
@@ -177,7 +177,7 @@ def log_in(request):
 
 
 
-
+# ....................................................................... ML ..........................................................
 UPLOAD_DIR = "uploaded_pdfs"
 VECTOR_STORE_DIR = r"vector_stores\Machine_Learning_Notes[1]"
 #model = create_vector_store_from_pdf()
@@ -186,6 +186,29 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(VECTOR_STORE_DIR, exist_ok=True)
 
 
+from rest_framework.decorators import api_view, parser_classes
+from rest_framework.parsers import MultiPartParser
+from rest_framework.response import Response
+from rest_framework import status
+import os
+import uuid
+from pathlib import Path
+import os
+import uuid
+import traceback
+from rest_framework.decorators import api_view, parser_classes
+from rest_framework.parsers import MultiPartParser
+from rest_framework.response import Response
+from rest_framework import status
+
+# ..... CONFIG .....
+BASE_DIR = Path(__file__).resolve().parent.parent
+UPLOAD_DIR = BASE_DIR / "uploads"
+VECTOR_STORE_DIR = BASE_DIR / "vector_stores" / "Machine_Learning_Notes[1]"
+LAST_FILE_ID_PATH = BASE_DIR / "last_file_id.txt"  # Stores last uploaded file_id
+
+
+# ....... PDF UPLOAD .......
 @api_view(['POST'])
 @parser_classes([MultiPartParser])
 def upload_pdf(request):
@@ -193,55 +216,80 @@ def upload_pdf(request):
         return Response({"error": "No PDF file provided."}, status=status.HTTP_400_BAD_REQUEST)
 
     pdf_file = request.FILES['pdf']
-    file_id = os.path.splitext(pdf_file.name)[0]  # safer than replace(".pdf", "")
 
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
-    os.makedirs(VECTOR_STORE_DIR, exist_ok=True)
+    # 1️⃣ Generate permanent ID
+    file_id = str(uuid.uuid4())
 
-    pdf_path = os.path.join(UPLOAD_DIR, pdf_file.name)
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    VECTOR_STORE_DIR.mkdir(parents=True, exist_ok=True)
+
+    # 2️⃣ Save uploaded PDF
+    pdf_path = UPLOAD_DIR / pdf_file.name
     with open(pdf_path, 'wb') as f:
-        for chunk in pdf_file.chunks():  # safer for large files
+        for chunk in pdf_file.chunks():
             f.write(chunk)
 
-    vector_store_path = os.path.join(VECTOR_STORE_DIR, file_id)
+    # 3️⃣ Create vector store folder using file_id
+    vector_store_path = VECTOR_STORE_DIR / file_id
+    vector_store_path.mkdir(parents=True, exist_ok=True)
 
     try:
-        Model.create_vector_store_from_pdf(pdf_path, vector_store_path)
+        Model.create_vector_store_from_pdf(str(pdf_path), str(vector_store_path))
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    print('PDF uploaded.......')
+
+    print(f"✅ Vector store saved at: {vector_store_path}")
+    print(f"✅ PDF '{pdf_file.name}' uploaded and processed successfully with FileID: {file_id}")
+
+
+    LAST_FILE_ID_PATH.write_text(file_id)
+
     return Response({
         "message": "PDF uploaded and processed successfully.",
         "file_id": file_id
     }, status=status.HTTP_200_OK)
 
 
-
-VECTOR_STORE_DIR = r"vector_stores/Machine_Learning_Notes[1]"
+# ....... ASK QUESTION .........
 @api_view(['POST'])
 def ask_question(request):
-    file_id = request.data.get("file_id")
     question = request.data.get("question")
+    if not question:
+        return Response({"error": "'question' is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-    #print("Received question:", question)
+    # Read the last uploaded file_id
+    if not LAST_FILE_ID_PATH.exists():
+        return Response({"error": "No PDF has been uploaded yet."}, status=status.HTTP_404_NOT_FOUND)
 
-    if not file_id or not question:
-        return Response({"error": "Both 'file_id' and 'question' are required."}, status=400)
+    file_id = LAST_FILE_ID_PATH.read_text().strip()
 
-    vector_store_path = os.path.join(VECTOR_STORE_DIR, file_id)
+    print(f"1️⃣ Received question: {question}", flush=True)
+    print(f"2️⃣ Using last uploaded FileID: {file_id}", flush=True)
 
-    if not os.path.exists(vector_store_path):
-        return Response({"error": f"No vector store found for file_id: {file_id}"}, status=404)
+    vector_store_path = VECTOR_STORE_DIR / file_id
+    print(f"3️⃣ vector_store_path: {vector_store_path}", flush=True)
 
-    print("Vector Store Contents:", os.listdir(vector_store_path))
+    if vector_store_path.parent.exists():
+        print(f"📂 Parent exists: True | Contents: {os.listdir(vector_store_path.parent)}", flush=True)
+    else:
+        print("📂 Parent exists: False", flush=True)
+
+    print(f"📁 Vector store exists?: {vector_store_path.exists()} | Is dir?: {vector_store_path.is_dir()}", flush=True)
+
+    if not vector_store_path.exists():
+        return Response({"error": f"No vector store found for file_id: {file_id}"}, status=status.HTTP_404_NOT_FOUND)
 
     try:
-        # Direct function call (not async)
-        response = Model.answer_question_from_store(question, vector_store_path)        
-        return Response({"response": response})
+        response_text = Model.answer_question_from_store(question, str(vector_store_path), str(VECTOR_STORE_DIR))
+        
+        return Response({"answer": response_text}, status=status.HTTP_200_OK)
     except Exception as e:
-        print("Error while answering question:", str(e))
-        return Response({"error": str(e)}, status=500)
+        traceback.print_exc()
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
 
 
 
@@ -276,3 +324,4 @@ def delete_vector_store_view(request):
             return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
     return JsonResponse({"status": "error", "message": "Invalid request method"}, status=405)
+# ....................................................................... ML ..........................................................

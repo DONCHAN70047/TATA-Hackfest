@@ -31,7 +31,7 @@ const AiChatInterface: React.FC = () => {
     inputRef.current?.focus();
   }, []);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputMessage.trim()) return;
 
@@ -46,25 +46,41 @@ const AiChatInterface: React.FC = () => {
     setInputMessage('');
     setIsTyping(true);
 
-    setTimeout(() => {
+    try {
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/ask-question/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          question: userMessage.text
+        })
+      });
+
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+      const data = await res.json();
+
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: generateAIResponse(inputMessage),
+        text: data.response || "Sorry, I couldn't find an answer.",
         sender: 'ai',
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, aiMessage]);
-      setIsTyping(false);
-    }, 1500);
-  };
 
-  const generateAIResponse = (msg: string): string => {
-    const m = msg.toLowerCase();
-    if (m.includes('coverage')) return 'I can explain your policy coverage in detail...';
-    if (m.includes('claim')) return 'To file a claim, you will need the following documents...';
-    if (m.includes('deductible')) return 'A deductible is the amount you pay before insurance covers the rest.';
-    if (m.includes('life insurance')) return 'Life insurance provides financial support to your family after you pass.';
-    return "I'm here to help with any insurance-related question you may have.";
+      setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error("Error fetching AI response:", error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: "⚠️ Error: Unable to fetch response from AI.",
+        sender: 'ai',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const suggestedQuestions = [
