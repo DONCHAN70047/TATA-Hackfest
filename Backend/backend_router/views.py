@@ -61,18 +61,6 @@ cloudinary.config(
 
 
 
-# ............................................................... Mail Function ......................................
-def MailFunction(userMail, userName, password):
-    subject = 'InsurencePro💁‍♂️'
-    from_email = settings.EMAIL_HOST_USER
-    to_email = userMail
-    text_content = 'This is a fallback plain text message.'
-    html_content = f'<p><pre>Hi {userName}, thank you for signing up on UPOLABDHI!......... 🎉</pre> <pre>Your username: {userName}Y \our password: {password}....🔑</pre>  <pre>Please keep your credentials safe and do not share them with others........</pre>   <pre>Your registration was successful.....😊😊 — Welcome to UPOLABDHI!..... 😀😀</pre></p>'
-
-    msg = EmailMultiAlternatives(subject, text_content, from_email, [to_email])
-    msg.attach_alternative(html_content, "text/html")
-    msg.send()
-# ............................................................... Mail Function ......................................
 
 
 # ....................................................................... sign_in ............................................ 
@@ -113,7 +101,7 @@ def sign_in(request):
             "refresh": refresh_token,
         }, status=HTTP_201_CREATED)
 
-        MailFunction(email, username, password)
+        
 
         secure = False  
         response.set_cookie('access', access_token, httponly=True, secure=secure, samesite='Lax')
